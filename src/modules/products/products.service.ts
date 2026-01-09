@@ -26,9 +26,9 @@ export class ProductsService {
     const skip = (page - 1) * limit;
 
     // Build where clause with all filters
+    // Note: Only filter by product_type, not status, to match database values
     const where: any = {
       product_type: 'onhand',
-      status: 'active',
     };
 
     // Category filter
@@ -162,9 +162,9 @@ export class ProductsService {
     const skip = (page - 1) * limit;
 
     // Build where clause with all filters
+    // Note: Only filter by product_type, not status, to match database values
     const where: any = {
       product_type: 'preorder',
-      status: 'active',
     };
 
     // Category filter
