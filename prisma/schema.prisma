@@ -1,0 +1,439 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model bank_types {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code       String    @unique @db.VarChar(50)
+  name       String    @db.VarChar(100)
+  color      String?   @db.VarChar(50)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model box_items {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  box_id      String    @db.Uuid
+  order_id    String?   @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?
+  quantity    Int
+  price       Decimal   @db.Decimal(10, 2)
+  currency    String?   @db.VarChar(10)
+  weight      Decimal?  @db.Decimal(10, 3)
+  length      Decimal?  @db.Decimal(10, 2)
+  width       Decimal?  @db.Decimal(10, 2)
+  height      Decimal?  @db.Decimal(10, 2)
+  image_url   String?
+  sku         String?   @db.VarChar(100)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  boxes       boxes     @relation(fields: [box_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders      orders?   @relation(fields: [order_id], references: [id], onUpdate: NoAction)
+
+  @@index([box_id], map: "idx_box_items_box_id")
+}
+
+model box_types {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String    @unique @db.VarChar(50)
+  name        String    @db.VarChar(100)
+  description String?
+  color       String?   @db.VarChar(50)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model boxes {
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id            String            @db.Uuid
+  box_number         String            @unique @db.VarChar(50)
+  status             String?           @default("in_warehouse") @db.VarChar(50)
+  current_location   String?           @db.VarChar(255)
+  estimated_delivery DateTime?         @db.Timestamptz(6)
+  first_item_date    DateTime?         @db.Timestamptz(6)
+  free_period_end    DateTime?         @db.Timestamptz(6)
+  penalty_start_date DateTime?         @db.Timestamptz(6)
+  daily_penalty      Decimal?          @default(50) @db.Decimal(10, 2)
+  current_penalty    Decimal?          @default(0) @db.Decimal(10, 2)
+  created_at         DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?         @default(now()) @db.Timestamptz(6)
+  box_items          box_items[]
+  users              users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  invoices           invoices[]
+  tracking_events    tracking_events[]
+
+  @@index([user_id], map: "idx_boxes_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cart_items {
+  id                  String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id             String    @db.Uuid
+  product_id          String    @db.Uuid
+  quantity            Int
+  box_type_preference String?   @db.VarChar(10)
+  created_at          DateTime? @default(now()) @db.Timestamp(6)
+  updated_at          DateTime? @default(now()) @db.Timestamp(6)
+  products            products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users               users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, product_id])
+  @@index([product_id], map: "idx_cart_items_product_id")
+  @@index([user_id], map: "idx_cart_items_user_id")
+}
+
+model couriers {
+  id                    String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String            @db.VarChar(100)
+  code                  String            @unique @db.VarChar(50)
+  tracking_url_template String?
+  created_at            DateTime?         @default(now()) @db.Timestamptz(6)
+  tracking_events       tracking_events[]
+}
+
+model invoice_items {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  invoice_id  String    @db.Uuid
+  description String    @db.VarChar(255)
+  quantity    Int
+  unit_price  Decimal   @db.Decimal(10, 2)
+  total       Decimal   @db.Decimal(10, 2)
+  created_at  DateTime? @default(now()) @db.Timestamptz(6)
+  invoices    invoices  @relation(fields: [invoice_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model invoices {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String          @db.Uuid
+  box_id         String?         @db.Uuid
+  invoice_number String          @unique @db.VarChar(50)
+  subtotal       Decimal         @db.Decimal(10, 2)
+  shipping_fee   Decimal?        @default(0) @db.Decimal(10, 2)
+  customs_fee    Decimal?        @default(0) @db.Decimal(10, 2)
+  total          Decimal         @db.Decimal(10, 2)
+  currency       String?         @default("PHP") @db.VarChar(10)
+  status         String?         @default("pending") @db.VarChar(50)
+  due_date       DateTime        @db.Timestamptz(6)
+  paid_at        DateTime?       @db.Timestamptz(6)
+  payment_method String?         @db.VarChar(100)
+  created_at     DateTime?       @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?       @default(now()) @db.Timestamptz(6)
+  invoice_items  invoice_items[]
+  boxes          boxes?          @relation(fields: [box_id], references: [id], onUpdate: NoAction)
+  users          users           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_invoices_user_id")
+}
+
+model liked_items {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  product_id String    @db.Uuid
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  products   products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, product_id])
+}
+
+model notifications {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  type       String    @db.VarChar(50)
+  title      String    @db.VarChar(255)
+  message    String
+  read       Boolean?  @default(false)
+  metadata   Json?
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "idx_notifications_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model order_items {
+  id                    String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  order_id              String    @db.Uuid
+  product_id            String    @db.Uuid
+  product_name          String    @db.VarChar(255)
+  product_type          String    @db.VarChar(20)
+  quantity              Int
+  unit_price            Decimal   @db.Decimal(10, 2)
+  total                 Decimal   @db.Decimal(10, 2)
+  image_url             String?
+  preorder_release_date DateTime? @db.Date
+  created_at            DateTime? @default(now()) @db.Timestamp(6)
+  orders                orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  products              products  @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([order_id], map: "idx_order_items_order_id")
+  @@index([product_id], map: "idx_order_items_product_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model orders {
+  id                         String            @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id                    String            @db.Uuid
+  order_number               String            @unique @db.VarChar(50)
+  subtotal                   Decimal           @db.Decimal(10, 2)
+  isf                        Decimal           @db.Decimal(10, 2)
+  lsf                        Decimal           @db.Decimal(10, 2)
+  shipping_fee               Decimal           @db.Decimal(10, 2)
+  solo_shipping_fee          Decimal?          @db.Decimal(10, 2)
+  shared_shipping_fee        Decimal?          @db.Decimal(10, 2)
+  total                      Decimal           @db.Decimal(10, 2)
+  currency                   String            @default("PHP") @db.VarChar(3)
+  status                     String            @default("pending") @db.VarChar(50)
+  payment_status             String            @default("pending") @db.VarChar(20)
+  payment_type               String            @default("full") @db.VarChar(20)
+  payment_method             Json?
+  downpayment_amount         Decimal?          @db.Decimal(10, 2)
+  downpayment_paid           Decimal?          @default(0) @db.Decimal(10, 2)
+  balance                    Decimal?          @db.Decimal(10, 2)
+  qr_code                    String?
+  proof_of_payment_url       String?
+  paid_at                    DateTime?         @db.Timestamp(6)
+  box_type_preference        String            @db.VarChar(10)
+  shipping_address           Json
+  fulfillment_status         String?           @db.VarChar(50)
+  box_id                     String?           @db.Uuid
+  ph_courier_tracking_number String?           @db.VarChar(100)
+  ph_courier_name            String?           @db.VarChar(50)
+  packed_at                  DateTime?         @db.Timestamp(6)
+  shipped_to_manila_at       DateTime?         @db.Timestamp(6)
+  received_at_manila_at      DateTime?         @db.Timestamp(6)
+  created_at                 DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at                 DateTime?         @default(now()) @db.Timestamp(6)
+  box_items                  box_items[]
+  order_items                order_items[]
+  users                      users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  payment_history            payment_history[]
+
+  @@index([box_id], map: "idx_orders_box_id")
+  @@index([created_at(sort: Desc)], map: "idx_orders_created_at")
+  @@index([order_number], map: "idx_orders_order_number")
+  @@index([payment_status], map: "idx_orders_payment_status")
+  @@index([status], map: "idx_orders_status")
+  @@index([user_id], map: "idx_orders_user_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payment_history {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id             String    @db.Uuid
+  amount               Decimal   @db.Decimal(10, 2)
+  currency             String    @db.VarChar(10)
+  payment_type         String    @db.VarChar(50)
+  installment_number   Int?
+  payment_method       Json?
+  status               String?   @default("pending") @db.VarChar(50)
+  verified             Boolean?  @default(false)
+  verified_at          DateTime? @db.Timestamptz(6)
+  proof_of_payment_url String?
+  created_at           DateTime? @default(now()) @db.Timestamptz(6)
+  orders               orders    @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model product_stores {
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  product_id     String    @db.Uuid
+  store_id       String    @db.Uuid
+  stock          Int       @default(0)
+  reserved_stock Int?      @default(0)
+  min_threshold  Int?      @default(10)
+  is_available   Boolean?  @default(true)
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @default(now()) @db.Timestamp(6)
+  products       products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  stores         stores    @relation(fields: [store_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([product_id, store_id])
+  @@index([product_id], map: "idx_product_stores_product_id")
+  @@index([store_id], map: "idx_product_stores_store_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model product_variations {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  product_id     String    @db.Uuid
+  name           String    @db.VarChar(255)
+  type           String?   @db.VarChar(50)
+  value          String    @db.VarChar(255)
+  price_modifier Decimal?  @default(0) @db.Decimal(10, 2)
+  stock          Int?      @default(0)
+  sku            String?   @db.VarChar(100)
+  image_url      String?
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  products       products  @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model products {
+  id                    String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                  String               @db.VarChar(255)
+  description           String?
+  price                 Decimal              @db.Decimal(10, 2)
+  currency              String               @default("KRW") @db.VarChar(3)
+  images                String[]
+  category              String?              @db.VarChar(100)
+  brand                 String?              @db.VarChar(100)
+  sku                   String?              @unique @db.VarChar(100)
+  stock                 Int                  @default(0)
+  weight                Decimal?             @db.Decimal(10, 3)
+  dimensions            Json?
+  product_type          String               @default("onhand") @db.VarChar(20)
+  status                String               @default("active") @db.VarChar(20)
+  seo_title             String?              @db.VarChar(255)
+  seo_description       String?
+  created_at            DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?            @default(now()) @db.Timestamp(6)
+  reserved_stock        Int?                 @default(0)
+  min_threshold         Int?                 @default(10)
+  order_deadline        DateTime?            @db.Timestamp(6)
+  release_date          DateTime?            @db.Timestamp(6)
+  expected_delivery     DateTime?            @db.Timestamp(6)
+  php_price             Decimal?             @db.Decimal(10, 2)
+  price_conversion_rate Decimal?             @default(0.042) @db.Decimal(10, 6)
+  tags                  String[]
+  full_description      String?
+  specifications        Json?
+  cart_items            cart_items[]
+  liked_items           liked_items[]
+  order_items           order_items[]
+  product_stores        product_stores[]
+  product_variations    product_variations[]
+
+  @@index([brand], map: "idx_products_brand")
+  @@index([category], map: "idx_products_category")
+  @@index([created_at], map: "idx_products_created_at")
+  @@index([price], map: "idx_products_price")
+  @@index([product_type], map: "idx_products_product_type")
+  @@index([sku], map: "idx_products_sku")
+  @@index([status], map: "idx_products_status")
+  @@index([stock], map: "idx_products_stock")
+}
+
+model stores {
+  id             String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name           String           @db.VarChar(255)
+  location       String           @db.VarChar(255)
+  country        String           @default("Philippines") @db.VarChar(100)
+  is_active      Boolean?         @default(true)
+  created_at     DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(6)
+  product_stores product_stores[]
+
+  @@index([is_active], map: "idx_stores_is_active")
+}
+
+model tracking_events {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tracking_number        String    @db.VarChar(100)
+  box_id                 String?   @db.Uuid
+  courier_id             String?   @db.Uuid
+  status                 String    @db.VarChar(50)
+  location               String?   @db.VarChar(255)
+  description            String?
+  translated_description String?
+  timestamp              DateTime? @default(now()) @db.Timestamptz(6)
+  metadata               Json?
+  boxes                  boxes?    @relation(fields: [box_id], references: [id], onUpdate: NoAction)
+  couriers               couriers? @relation(fields: [courier_id], references: [id], onUpdate: NoAction)
+
+  @@index([tracking_number], map: "idx_tracking_events_tracking_number")
+}
+
+model users {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String          @unique @db.VarChar(255)
+  name            String          @db.VarChar(255)
+  phone           String?         @db.VarChar(50)
+  address         Json?
+  created_at      DateTime        @default(now()) @db.Timestamp(6)
+  updated_at      DateTime        @default(now()) @db.Timestamp(6)
+  password_hash   String?         @db.VarChar(255)
+  role            String          @default("customer") @db.VarChar(50)
+  client_level    String?         @db.VarChar(50)
+  approval_status String?         @default("pending") @db.VarChar(20)
+  boxes           boxes[]
+  cart_items      cart_items[]
+  invoices        invoices[]
+  liked_items     liked_items[]
+  notifications   notifications[]
+  orders          orders[]
+
+  @@index([approval_status], map: "idx_users_approval_status")
+  @@index([email], map: "idx_users_email")
+  @@index([role], map: "idx_users_role")
+}
+
+enum bank_type {
+  BPI
+  BDO
+  GCASH
+  GOTYME
+  MAYA
+}
+
+enum box_type {
+  solo
+  shared
+}
+
+enum currency_type {
+  PHP
+  KRW
+}
+
+enum fulfillment_status {
+  pending_packing
+  packed
+  in_transit_to_manila
+  received_at_manila
+  consolidated
+  ready_for_delivery
+  out_for_delivery
+  delivered
+}
+
+enum order_status {
+  pending
+  confirmed
+  processing
+  packed
+  in_transit_to_manila
+  received_at_manila
+  consolidated
+  shipped
+  delivered
+  cancelled
+}
+
+enum payment_method_type {
+  qr_code
+  bank_transfer
+  online
+}
+
+enum payment_status {
+  pending
+  partial
+  paid
+  failed
+  refunded
+}
+
+enum payment_type_enum {
+  full
+  downpayment
+}
+
+enum product_type {
+  onhand
+  preorder
+  kr_website
+}

@@ -1,0 +1,6 @@
+Always follow these architectural rules:
+1. Use kebab-case for file and directory names.
+2. All database interactions must happen in a `.service.ts` file within a module.
+3. Controllers should never call Prisma directly; they must use Services.
+4. Import the Prisma client from `@/config/database`.
+5. Use Zod for all request body validation (DTOs).
