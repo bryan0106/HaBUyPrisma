@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: hanbuy-api
+    env: node
+    plan: free
+    region: singapore
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: PORT
+        fromService:
+          type: web
+          name: hanbuy-api
+          property: port
+    healthCheckPath: /health
+

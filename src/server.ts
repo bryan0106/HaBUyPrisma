@@ -32,9 +32,18 @@ async function startServer() {
 
     // Start Express server
     app.listen(PORT, '0.0.0.0', () => {
-      const baseUrl = process.env.RAILWAY_PUBLIC_DOMAIN 
-        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : `http://localhost:${PORT}`;
+      // Detect base URL based on platform
+      let baseUrl: string;
+      if (process.env.RENDER_EXTERNAL_URL) {
+        // Render deployment
+        baseUrl = process.env.RENDER_EXTERNAL_URL;
+      } else if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+        // Railway deployment
+        baseUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+      } else {
+        // Local development
+        baseUrl = `http://localhost:${PORT}`;
+      }
       
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`📍 Base URL: ${baseUrl}`);
