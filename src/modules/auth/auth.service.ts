@@ -88,5 +88,30 @@ export class AuthService {
       token,
     };
   }
-}
 
+  /**
+   * Set or update user password
+   * Utility method for setting passwords on existing users
+   */
+  async setUserPassword(email: string, password: string) {
+    const user = await prisma.users.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new Error('USER_NOT_FOUND');
+    }
+
+    // Hash the password
+    const saltRounds = 10;
+    const password_hash = await bcrypt.hash(password, saltRounds);
+
+    // Update user with password hash
+    await prisma.users.update({
+      where: { email },
+      data: { password_hash },
+    });
+
+    return { success: true, message: 'Password set successfully' };
+  }
+}

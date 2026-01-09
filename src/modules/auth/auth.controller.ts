@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { loginDto } from './auth.dto';
+import { z } from 'zod';
 
 /**
  * Auth Controller
@@ -84,5 +85,51 @@ export class AuthController {
       });
     }
   };
-}
 
+  /**
+   * POST /auth/set-password
+   * Set or update password for a user (utility endpoint for testing)
+   * NOTE: In production, this should be protected or removed
+   */
+  setPassword = async (req: Request, res: Response) => {
+    try {
+      // Allow in all environments for now (can be restricted later)
+      // TODO: Add proper admin authentication in production
+
+      const setPasswordDto = z.object({
+        email: z.string().email('Invalid email format'),
+        password: z.string().min(1, 'Password is required'),
+      });
+
+      const validatedData = setPasswordDto.parse(req.body);
+      const result = await this.authService.setUserPassword(
+        validatedData.email,
+        validatedData.password
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'ZodError') {
+        return res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          message: 'Invalid request format',
+        });
+      }
+
+      if (error instanceof Error && error.message === 'USER_NOT_FOUND') {
+        return res.status(404).json({
+          success: false,
+          error: 'User not found',
+          message: 'No account found with this email',
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: 'Failed to set password',
+      });
+    }
+  };
+}

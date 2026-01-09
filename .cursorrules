@@ -2,5 +2,16 @@ Always follow these architectural rules:
 1. Use kebab-case for file and directory names.
 2. All database interactions must happen in a `.service.ts` file within a module.
 3. Controllers should never call Prisma directly; they must use Services.
-4. Import the Prisma client from `@/config/database`.
+4. Import the Prisma client using RELATIVE paths (e.g., `../../config/database`), NOT path aliases like `@/config/database`. Path aliases don't work in compiled JavaScript on Render.
 5. Use Zod for all request body validation (DTOs).
+
+CRITICAL: Render Build Compatibility Rules:
+6. NEVER use TypeScript path aliases (`@/*`) in import statements. Always use relative paths (e.g., `../config/database`, `../../config/database`).
+7. All `@types/*` packages MUST be in `dependencies` (not `devDependencies`) to ensure they're installed during Render's build process.
+8. When adding new npm packages that require type definitions, install both the package AND its `@types/*` package, and place `@types/*` in `dependencies`.
+9. Before committing, verify that all imports use relative paths and that TypeScript can compile without errors.
+10. Test that `npm run build` completes successfully locally before pushing to ensure Render builds will succeed.
+
+IMPORTANT: Documentation Rules:
+11. NEVER create documentation files (*.md) unless explicitly requested. Answer questions directly in the conversation instead of creating documentation files.
+12. If the user asks a question, provide a direct answer immediately - don't create markdown files or documentation. Only create code files when needed for implementation.

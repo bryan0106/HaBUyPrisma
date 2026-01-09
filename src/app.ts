@@ -193,6 +193,7 @@ app.get('/api/database/test-prisma', databaseController.testPrismaConnection);
 
 // Auth routes
 app.post('/api/auth/login', authController.login);
+app.post('/api/auth/set-password', authController.setPassword);
 
 // User routes
 app.get('/api/users', userController.getAllUsers);
