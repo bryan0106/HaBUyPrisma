@@ -49,6 +49,7 @@ async function startServer() {
       console.log(`📍 Base URL: ${baseUrl}`);
       console.log(`📊 Health check: ${baseUrl}/health`);
       console.log(`🔗 Database test: ${baseUrl}/api/database/test`);
+      console.log(`🔐 Auth API: ${baseUrl}/api/auth/login`);
       console.log(`👤 User API: ${baseUrl}/api/users`);
       console.log(`📦 BoxTypes API: ${baseUrl}/api/box-types`);
     });

@@ -1,4 +1,4 @@
-import { prisma } from '@/config/database';
+import { prisma } from '../../config/database';
 import type { CreateUserDto, UpdateUserDto } from './user.dto';
 
 /**

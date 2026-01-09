@@ -3,6 +3,7 @@ import cors from 'cors';
 import { UserController } from './modules/user/user.controller';
 import { DatabaseController } from './modules/database/database.controller';
 import { BoxTypesController } from './modules/box-types/box-types.controller';
+import { AuthController } from './modules/auth/auth.controller';
 
 /**
  * Express Application
@@ -96,6 +97,17 @@ app.get('/api', (req: Request, res: Response) => {
           description: 'Test Prisma connection',
         },
       },
+      auth: {
+        login: {
+          method: 'POST',
+          path: '/api/auth/login',
+          description: 'Login user with email and password',
+          body: {
+            email: 'string (required)',
+            password: 'string (required)',
+          },
+        },
+      },
       users: {
         getAll: {
           method: 'GET',
@@ -173,10 +185,14 @@ app.get('/api', (req: Request, res: Response) => {
 const userController = new UserController();
 const databaseController = new DatabaseController();
 const boxTypesController = new BoxTypesController();
+const authController = new AuthController();
 
 // Database connection test routes
 app.get('/api/database/test', databaseController.testNeonConnection);
 app.get('/api/database/test-prisma', databaseController.testPrismaConnection);
+
+// Auth routes
+app.post('/api/auth/login', authController.login);
 
 // User routes
 app.get('/api/users', userController.getAllUsers);

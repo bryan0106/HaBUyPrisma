@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { testConnection, testPrismaConnection } from '@/config/database';
+import { testConnection, testPrismaConnection } from '../../config/database';
 
 /**
  * Database Controller

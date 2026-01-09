@@ -1,4 +1,4 @@
-import { prisma } from '@/config/database';
+import { prisma } from '../../config/database';
 import type { CreateBoxTypeDto, UpdateBoxTypeDto } from './box-types.dto';
 
 /**
