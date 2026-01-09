@@ -222,11 +222,22 @@ export class ProductsController {
       });
     } catch (error) {
       if (error instanceof Error && error.name === 'ZodError') {
+        const zodError = error instanceof z.ZodError ? error : null;
+        const errors = zodError?.errors || [];
+        
+        // Provide helpful messages for common mistakes
+        const helpfulMessage = errors.map(err => {
+          if (err.path.includes('status') && err.code === 'invalid_enum_value') {
+            return `Field 'status' must be one of: "active", "inactive", or "out_of_stock". Did you mean to set 'product_type' to "${err.received}"?`;
+          }
+          return `${err.path.join('.')}: ${err.message}`;
+        }).join('; ');
+
         return res.status(400).json({
           success: false,
           error: 'Validation error',
-          message: 'Invalid product data',
-          details: error instanceof z.ZodError ? error.errors : undefined,
+          message: helpfulMessage || 'Invalid product data',
+          details: errors,
         });
       }
 
@@ -266,11 +277,22 @@ export class ProductsController {
       });
     } catch (error) {
       if (error instanceof Error && error.name === 'ZodError') {
+        const zodError = error instanceof z.ZodError ? error : null;
+        const errors = zodError?.errors || [];
+        
+        // Provide helpful messages for common mistakes
+        const helpfulMessage = errors.map(err => {
+          if (err.path.includes('status') && err.code === 'invalid_enum_value') {
+            return `Field 'status' must be one of: "active", "inactive", or "out_of_stock". Did you mean to set 'product_type' to "${err.received}"?`;
+          }
+          return `${err.path.join('.')}: ${err.message}`;
+        }).join('; ');
+
         return res.status(400).json({
           success: false,
           error: 'Validation error',
-          message: 'Invalid product data',
-          details: error instanceof z.ZodError ? error.errors : undefined,
+          message: helpfulMessage || 'Invalid product data',
+          details: errors,
         });
       }
 
@@ -320,6 +342,23 @@ export class ProductsController {
         return res.status(404).json({
           success: false,
           message: 'Product not found',
+        });
+      }
+
+      // Handle foreign key constraint (product has order_items)
+      if (error instanceof Error && error.message.includes('Cannot delete product')) {
+        return res.status(409).json({
+          success: false,
+          message: error.message,
+          error: 'Product cannot be deleted because it is referenced in orders. Use soft delete by setting status to "inactive" instead.',
+        });
+      }
+
+      // Handle Prisma foreign key constraint errors
+      if (error instanceof Error && (error.message.includes('Foreign key constraint') || error.message.includes('violates foreign key'))) {
+        return res.status(409).json({
+          success: false,
+          message: 'Cannot delete product: Product is referenced in orders. Use soft delete by setting status to "inactive" instead.',
         });
       }
 

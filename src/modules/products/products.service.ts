@@ -177,20 +177,29 @@ export class ProductsService {
 
     // Build where clause with all filters
     // Include products accepting preorders (even if also has onhand stock)
+    // Logic: 
+    // - If product_type = 'preorder', include it (regardless of order_deadline or is_preorder_available)
+    // - If is_preorder_available = true, include it only if order_deadline is in future or null
+    const basePreorderConditions: any[] = [
+      // Pure preorder products (always show if product_type is preorder)
+      { product_type: 'preorder' },
+      // Products with preorder available flag (only if deadline not passed)
+      {
+        AND: [
+          { is_preorder_available: true },
+          {
+            OR: [
+              { order_deadline: { gte: new Date() } },
+              { order_deadline: null },
+            ],
+          },
+        ],
+      },
+    ];
+
     const where: any = {
       AND: [
-        {
-          OR: [
-            { product_type: 'preorder' },
-            { is_preorder_available: true },
-          ],
-        },
-        {
-          OR: [
-            { order_deadline: { gte: new Date() } },
-            { order_deadline: null }, // Products without deadline
-          ],
-        },
+        { OR: basePreorderConditions },
       ],
     };
 
@@ -614,8 +623,33 @@ export class ProductsService {
 
   /**
    * Delete product by ID
+   * Note: order_items has onDelete: NoAction, so products with orders cannot be deleted.
+   * This method will throw an error if the product has order_items.
+   * Consider using soft delete (setting status to 'inactive') instead.
    */
   async deleteProduct(id: string) {
+    // Check if product exists and has order_items
+    const product = await prisma.products.findUnique({
+      where: { id },
+      include: {
+        order_items: {
+          take: 1, // Just check if any exist
+        },
+      },
+    });
+
+    if (!product) {
+      throw new Error('Record to delete does not exist');
+    }
+
+    // Check if product has order_items (order_items has onDelete: NoAction)
+    if (product.order_items.length > 0) {
+      throw new Error('Cannot delete product: Product is referenced in order items. Use soft delete by setting status to "inactive" instead.');
+    }
+
+    // cart_items has onDelete: Cascade, so they will be deleted automatically
+    // order_items has onDelete: NoAction, so we check above
+    
     await prisma.products.delete({
       where: { id },
     });
