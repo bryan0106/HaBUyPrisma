@@ -15,3 +15,10 @@ CRITICAL: Render Build Compatibility Rules:
 IMPORTANT: Documentation Rules:
 11. NEVER create documentation files (*.md) unless explicitly requested. Answer questions directly in the conversation instead of creating documentation files.
 12. If the user asks a question, provide a direct answer immediately - don't create markdown files or documentation. Only create code files when needed for implementation.
+
+CRITICAL: TypeScript Type Safety Rules:
+13. ALWAYS ensure enum/const arrays match all switch cases and usage. If you add a new enum value, update ALL places that use it (switch statements, type definitions, defaults).
+14. When using Prisma orderBy, use 'as const' for sort direction values ('asc' | 'desc') to ensure type safety.
+15. Before committing, run TypeScript compiler locally: `npx tsc --noEmit` to catch type errors before deployment.
+16. If a function returns Prisma types (like orderBy), ensure return type matches Prisma's expected types exactly.
+17. When adding new sort options, update: (1) the enum/const array, (2) the switch statement handler, (3) any default values, (4) type definitions.

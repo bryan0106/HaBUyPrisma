@@ -156,7 +156,7 @@ export class ProductsService {
       max_price,
       page = 1, 
       limit = 50,
-      sort = 'release_date_asc'
+      sort = 'created_desc'
     } = query;
     
     const skip = (page - 1) * limit;
@@ -196,9 +196,9 @@ export class ProductsService {
       }
     }
 
-    // Build orderBy - default to release_date for preorder
+    // Build orderBy - default to release_date for preorder if no sort specified
     let orderBy = this.getOrderBy(sort);
-    if (sort === 'created_desc' && !orderBy) {
+    if (!orderBy) {
       orderBy = { release_date: 'asc' };
     }
 
@@ -282,24 +282,28 @@ export class ProductsService {
   /**
    * Convert sort option to Prisma orderBy
    */
-  private getOrderBy(sort: SortOption) {
+  private getOrderBy(sort: SortOption): any {
     switch (sort) {
       case 'price_asc':
-        return { price: 'asc' };
+        return { price: 'asc' as const };
       case 'price_desc':
-        return { price: 'desc' };
+        return { price: 'desc' as const };
       case 'name_asc':
-        return { name: 'asc' };
+        return { name: 'asc' as const };
       case 'name_desc':
-        return { name: 'desc' };
+        return { name: 'desc' as const };
       case 'created_asc':
-        return { created_at: 'asc' };
+        return { created_at: 'asc' as const };
       case 'created_desc':
-        return { created_at: 'desc' };
+        return { created_at: 'desc' as const };
       case 'stock_desc':
-        return { stock: 'desc' };
+        return { stock: 'desc' as const };
+      case 'release_date_asc':
+        return { release_date: 'asc' as const };
+      case 'release_date_desc':
+        return { release_date: 'desc' as const };
       default:
-        return { created_at: 'desc' };
+        return { created_at: 'desc' as const };
     }
   }
 

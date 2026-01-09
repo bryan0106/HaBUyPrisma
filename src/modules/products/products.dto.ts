@@ -6,7 +6,7 @@ import { z } from 'zod';
  */
 
 // Sort options enum
-export const sortOptions = ['price_asc', 'price_desc', 'name_asc', 'name_desc', 'created_desc', 'created_asc', 'stock_desc'] as const;
+export const sortOptions = ['price_asc', 'price_desc', 'name_asc', 'name_desc', 'created_desc', 'created_asc', 'stock_desc', 'release_date_asc', 'release_date_desc'] as const;
 export type SortOption = typeof sortOptions[number];
 
 // Query parameters for product listing with advanced filtering
