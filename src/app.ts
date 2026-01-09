@@ -179,14 +179,41 @@ app.get('/api', (req: Request, res: Response) => {
         },
       },
       products: {
+        getAll: {
+          method: 'GET',
+          path: '/api/products',
+          description: 'Get all products with filtering, sorting, and pagination',
+          query: {
+            category: 'string (optional) - Filter by category',
+            brand: 'string (optional) - Filter by brand',
+            search: 'string (optional) - Search in name/description',
+            min_price: 'number (optional) - Minimum price',
+            max_price: 'number (optional) - Maximum price',
+            in_stock: 'boolean (optional) - Filter in-stock items',
+            page: 'number (optional, default: 1) - Page number',
+            limit: 'number (optional, default: 50) - Items per page',
+            sort: 'string (optional) - Sort option (price_asc, price_desc, name_asc, etc.)',
+          },
+        },
+        getById: {
+          method: 'GET',
+          path: '/api/products/:id',
+          description: 'Get single product by ID',
+        },
         getOnhand: {
           method: 'GET',
           path: '/api/products/onhand',
           description: 'Get all onhand (in-stock) products',
           query: {
             category: 'string (optional) - Filter by category',
+            brand: 'string (optional) - Filter by brand',
+            search: 'string (optional) - Search in name/description',
+            min_price: 'number (optional) - Minimum price',
+            max_price: 'number (optional) - Maximum price',
+            in_stock: 'boolean (optional) - Filter in-stock items',
             page: 'number (optional, default: 1) - Page number',
             limit: 'number (optional, default: 50) - Items per page',
+            sort: 'string (optional) - Sort option',
           },
         },
         getPreorder: {
@@ -195,9 +222,51 @@ app.get('/api', (req: Request, res: Response) => {
           description: 'Get all preorder products',
           query: {
             category: 'string (optional) - Filter by category',
+            brand: 'string (optional) - Filter by brand',
+            search: 'string (optional) - Search in name/description',
+            min_price: 'number (optional) - Minimum price',
+            max_price: 'number (optional) - Maximum price',
             page: 'number (optional, default: 1) - Page number',
             limit: 'number (optional, default: 50) - Items per page',
+            sort: 'string (optional) - Sort option (release_date_asc, etc.)',
           },
+        },
+        create: {
+          method: 'POST',
+          path: '/api/products',
+          description: 'Create a new product',
+          body: {
+            name: 'string (required) - Product name',
+            description: 'string (optional) - Product description',
+            price: 'number (required) - Price in KRW',
+            currency: 'string (optional, default: "KRW") - Currency code',
+            images: 'array<string> (required) - Array of image URLs (min 1)',
+            category: 'string (optional) - Category',
+            brand: 'string (optional) - Brand name',
+            sku: 'string (optional) - SKU code (unique)',
+            stock: 'number (optional, default: 0) - Onhand stock',
+            preorder_stock: 'number (optional) - Preorder stock',
+            product_type: 'string (optional, default: "onhand") - onhand | preorder | kr_website',
+            status: 'string (optional, default: "active") - active | inactive | out_of_stock',
+            is_preorder_available: 'boolean (optional, default: false)',
+            is_onhand_available: 'boolean (optional, default: false)',
+            weight: 'number (optional) - Weight in kg',
+            dimensions: 'object (optional) - {length, width, height}',
+            order_deadline: 'string (optional) - ISO datetime',
+            release_date: 'string (optional) - ISO datetime',
+            tags: 'array<string> (optional) - Product tags',
+          },
+        },
+        update: {
+          method: 'PUT',
+          path: '/api/products/:id',
+          description: 'Update product by ID (all fields optional)',
+          body: 'Same as create, but all fields are optional',
+        },
+        delete: {
+          method: 'DELETE',
+          path: '/api/products/:id',
+          description: 'Delete product by ID',
         },
       },
     },
@@ -236,8 +305,13 @@ app.put('/api/box-types/:id', boxTypesController.updateBoxType);
 app.delete('/api/box-types/:id', boxTypesController.deleteBoxType);
 
 // Products routes
+app.get('/api/products', productsController.getAllProducts);
 app.get('/api/products/onhand', productsController.getOnhandProducts);
 app.get('/api/products/preorder', productsController.getPreorderProducts);
+app.get('/api/products/:id', productsController.getProductById);
+app.post('/api/products', productsController.createProduct);
+app.put('/api/products/:id', productsController.updateProduct);
+app.delete('/api/products/:id', productsController.deleteProduct);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

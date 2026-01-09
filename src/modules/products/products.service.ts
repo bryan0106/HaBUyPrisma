@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import type { ProductQueryDto, SortOption } from './products.dto';
+import type { ProductQueryDto, SortOption, CreateProductDto, UpdateProductDto } from './products.dto';
 
 /**
  * Products Service
@@ -26,43 +26,54 @@ export class ProductsService {
     const skip = (page - 1) * limit;
 
     // Build where clause with all filters
-    // Note: Only filter by product_type, not status, to match database values
+    // Include products with onhand stock (even if also accepting preorders)
+    const baseConditions: any[] = [
+      { product_type: 'onhand' },
+      { is_onhand_available: true },
+      { AND: [{ stock: { gt: 0 } }, { product_type: { not: 'preorder' } }] }, // Products with onhand stock (exclude pure preorder)
+    ];
+
     const where: any = {
-      product_type: 'onhand',
+      AND: [
+        { OR: baseConditions },
+      ],
     };
 
     // Category filter
     if (category) {
-      where.category = category;
+      where.AND.push({ category });
     }
 
     // Brand filter
     if (brand) {
-      where.brand = brand;
+      where.AND.push({ brand });
     }
 
     // Search filter (name or description) - case insensitive
     if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { description: { contains: search } },
-      ];
+      where.AND.push({
+        OR: [
+          { name: { contains: search } },
+          { description: { contains: search } },
+        ],
+      });
     }
 
     // Price range filter
     if (min_price !== undefined || max_price !== undefined) {
-      where.price = {};
+      const priceFilter: any = {};
       if (min_price !== undefined) {
-        where.price.gte = min_price;
+        priceFilter.gte = min_price;
       }
       if (max_price !== undefined) {
-        where.price.lte = max_price;
+        priceFilter.lte = max_price;
       }
+      where.AND.push({ price: priceFilter });
     }
 
-    // Stock filter
+    // Stock filter - ensure onhand stock is available
     if (in_stock === true) {
-      where.stock = { gt: 0 };
+      where.AND.push({ stock: { gt: 0 } });
     }
 
     // Build orderBy based on sort option
@@ -80,8 +91,11 @@ export class ProductsService {
       brand: true,
       sku: true,
       stock: true,
+      preorder_stock: true,
       status: true,
       product_type: true,
+      is_preorder_available: true,
+      is_onhand_available: true,
       weight: true,
       dimensions: true,
       created_at: true,
@@ -120,7 +134,7 @@ export class ProductsService {
     ]);
 
     // Format products for response with aggregated data
-    const formattedProducts = products.map((product) => this.formatProduct(product));
+    const formattedProducts = products.map((product: any) => this.formatProduct(product));
 
     return {
       data: formattedProducts,
@@ -162,38 +176,54 @@ export class ProductsService {
     const skip = (page - 1) * limit;
 
     // Build where clause with all filters
-    // Note: Only filter by product_type, not status, to match database values
+    // Include products accepting preorders (even if also has onhand stock)
     const where: any = {
-      product_type: 'preorder',
+      AND: [
+        {
+          OR: [
+            { product_type: 'preorder' },
+            { is_preorder_available: true },
+          ],
+        },
+        {
+          OR: [
+            { order_deadline: { gte: new Date() } },
+            { order_deadline: null }, // Products without deadline
+          ],
+        },
+      ],
     };
 
     // Category filter
     if (category) {
-      where.category = category;
+      where.AND.push({ category });
     }
 
     // Brand filter
     if (brand) {
-      where.brand = brand;
+      where.AND.push({ brand });
     }
 
     // Search filter (name or description) - case insensitive
     if (search) {
-      where.OR = [
-        { name: { contains: search } },
-        { description: { contains: search } },
-      ];
+      where.AND.push({
+        OR: [
+          { name: { contains: search } },
+          { description: { contains: search } },
+        ],
+      });
     }
 
     // Price range filter
     if (min_price !== undefined || max_price !== undefined) {
-      where.price = {};
+      const priceFilter: any = {};
       if (min_price !== undefined) {
-        where.price.gte = min_price;
+        priceFilter.gte = min_price;
       }
       if (max_price !== undefined) {
-        where.price.lte = max_price;
+        priceFilter.lte = max_price;
       }
+      where.AND.push({ price: priceFilter });
     }
 
     // Build orderBy - default to release_date for preorder if no sort specified
@@ -214,8 +244,11 @@ export class ProductsService {
       brand: true,
       sku: true,
       stock: true,
+      preorder_stock: true,
       status: true,
       product_type: true,
+      is_preorder_available: true,
+      is_onhand_available: true,
       weight: true,
       dimensions: true,
       order_deadline: true,
@@ -256,7 +289,7 @@ export class ProductsService {
     ]);
 
     // Format products for response with aggregated data
-    const formattedProducts = products.map((product) => this.formatProduct(product, true));
+    const formattedProducts = products.map((product: any) => this.formatProduct(product, true));
 
     return {
       data: formattedProducts,
@@ -360,6 +393,11 @@ export class ProductsService {
       brand: product.brand || null,
       sku: product.sku || null,
       stock: product.stock || 0,
+      preorder_stock: product.preorder_stock || null,
+      is_preorder_available: product.is_preorder_available || false,
+      is_onhand_available: product.is_onhand_available !== undefined 
+        ? product.is_onhand_available 
+        : (product.stock > 0), // Auto-calculate if not set
       total_store_stock: totalStoreStock, // Aggregated from product_stores
       available_stores_count: availableStoresCount,
       variation_count: variationCount,
@@ -372,8 +410,8 @@ export class ProductsService {
       updated_at: product.updated_at ? new Date(product.updated_at).toISOString() : null,
     };
 
-    // Add preorder-specific fields
-    if (includePreorderDates && product.product_type === 'preorder') {
+    // Add preorder-specific fields (for preorder products or products with preorder available)
+    if (includePreorderDates && (product.product_type === 'preorder' || product.is_preorder_available)) {
       // order_date: when preorder started (use order_deadline or created_at as fallback)
       formatted.order_date = product.order_deadline 
         ? new Date(product.order_deadline).toISOString()
@@ -385,6 +423,202 @@ export class ProductsService {
     }
 
     return formatted;
+  }
+
+  /**
+   * Get all products with advanced filtering and pagination
+   */
+  async getAllProducts(query: ProductQueryDto) {
+    const { 
+      category, 
+      brand, 
+      search, 
+      min_price, 
+      max_price, 
+      in_stock,
+      page = 1, 
+      limit = 50,
+      sort = 'created_desc'
+    } = query;
+    
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    // Category filter
+    if (category) {
+      where.category = category;
+    }
+
+    // Brand filter
+    if (brand) {
+      where.brand = brand;
+    }
+
+    // Search filter (name or description) - case insensitive
+    if (search) {
+      where.OR = [
+        { name: { contains: search } },
+        { description: { contains: search } },
+      ];
+    }
+
+    // Price range filter
+    if (min_price !== undefined || max_price !== undefined) {
+      const priceFilter: any = {};
+      if (min_price !== undefined) {
+        priceFilter.gte = min_price;
+      }
+      if (max_price !== undefined) {
+        priceFilter.lte = max_price;
+      }
+      where.price = priceFilter;
+    }
+
+    // Stock filter
+    if (in_stock !== undefined) {
+      if (in_stock) {
+        where.stock = { gt: 0 };
+      } else {
+        where.stock = { lte: 0 };
+      }
+    }
+
+    // Get total count
+    const total = await prisma.products.count({ where });
+
+    // Get products with relations
+    const products = await prisma.products.findMany({
+      where,
+      include: {
+        product_stores: {
+          include: {
+            stores: true,
+          },
+        },
+        product_variations: true,
+      },
+      orderBy: this.getOrderBy(sort as SortOption),
+      skip,
+      take: limit,
+    });
+
+    // Format products
+    const formattedProducts = products.map((product: any) => 
+      this.formatProduct(product, true)
+    );
+
+    return {
+      data: formattedProducts,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
+        hasPrevPage: page > 1,
+      },
+      filters: {
+        category: category || null,
+        brand: brand || null,
+        search: search || null,
+        min_price: min_price || null,
+        max_price: max_price || null,
+        in_stock: in_stock !== undefined ? in_stock : null,
+      },
+      sort,
+    };
+  }
+
+  /**
+   * Get product by ID
+   */
+  async getProductById(id: string) {
+    const product = await prisma.products.findUnique({
+      where: { id },
+      include: {
+        product_stores: {
+          include: {
+            stores: true,
+          },
+        },
+        product_variations: true,
+      },
+    });
+
+    if (!product) {
+      return null;
+    }
+
+    return this.formatProduct(product as any, true);
+  }
+
+  /**
+   * Create a new product
+   */
+  async createProduct(data: CreateProductDto) {
+    // Auto-set is_onhand_available based on stock
+    const isOnhandAvailable = data.is_onhand_available ?? (data.stock > 0);
+
+    const product = await prisma.products.create({
+      data: {
+        ...data,
+        is_onhand_available: isOnhandAvailable,
+      },
+      include: {
+        product_stores: {
+          include: {
+            stores: true,
+          },
+        },
+        product_variations: true,
+      },
+    });
+
+    return this.formatProduct(product as any, true);
+  }
+
+  /**
+   * Update product by ID
+   */
+  async updateProduct(id: string, data: UpdateProductDto) {
+    // Auto-update is_onhand_available if stock is being updated
+    const updateData: any = { ...data };
+    
+    if (data.stock !== undefined) {
+      updateData.is_onhand_available = data.is_onhand_available ?? (data.stock > 0);
+    }
+
+    // Remove undefined values to avoid overwriting with null
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined) {
+        delete updateData[key];
+      }
+    });
+
+    const product = await prisma.products.update({
+      where: { id },
+      data: updateData,
+      include: {
+        product_stores: {
+          include: {
+            stores: true,
+          },
+        },
+        product_variations: true,
+      },
+    });
+
+    return this.formatProduct(product as any, true);
+  }
+
+  /**
+   * Delete product by ID
+   */
+  async deleteProduct(id: string) {
+    await prisma.products.delete({
+      where: { id },
+    });
   }
 }
 

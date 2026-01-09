@@ -283,10 +283,13 @@ model products {
   brand                 String?              @db.VarChar(100)
   sku                   String?              @unique @db.VarChar(100)
   stock                 Int                  @default(0)
+  preorder_stock        Int?
   weight                Decimal?             @db.Decimal(10, 3)
   dimensions            Json?
   product_type          String               @default("onhand") @db.VarChar(20)
   status                String               @default("active") @db.VarChar(20)
+  is_preorder_available Boolean?             @default(false)
+  is_onhand_available   Boolean?             @default(false)
   seo_title             String?              @db.VarChar(255)
   seo_description       String?
   created_at            DateTime?            @default(now()) @db.Timestamp(6)
