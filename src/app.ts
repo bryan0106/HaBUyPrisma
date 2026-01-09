@@ -4,6 +4,7 @@ import { UserController } from './modules/user/user.controller';
 import { DatabaseController } from './modules/database/database.controller';
 import { BoxTypesController } from './modules/box-types/box-types.controller';
 import { AuthController } from './modules/auth/auth.controller';
+import { ProductsController } from './modules/products/products.controller';
 
 /**
  * Express Application
@@ -177,6 +178,28 @@ app.get('/api', (req: Request, res: Response) => {
           description: 'Delete box type by ID',
         },
       },
+      products: {
+        getOnhand: {
+          method: 'GET',
+          path: '/api/products/onhand',
+          description: 'Get all onhand (in-stock) products',
+          query: {
+            category: 'string (optional) - Filter by category',
+            page: 'number (optional, default: 1) - Page number',
+            limit: 'number (optional, default: 50) - Items per page',
+          },
+        },
+        getPreorder: {
+          method: 'GET',
+          path: '/api/products/preorder',
+          description: 'Get all preorder products',
+          query: {
+            category: 'string (optional) - Filter by category',
+            page: 'number (optional, default: 1) - Page number',
+            limit: 'number (optional, default: 50) - Items per page',
+          },
+        },
+      },
     },
   });
 });
@@ -186,6 +209,7 @@ const userController = new UserController();
 const databaseController = new DatabaseController();
 const boxTypesController = new BoxTypesController();
 const authController = new AuthController();
+const productsController = new ProductsController();
 
 // Database connection test routes
 app.get('/api/database/test', databaseController.testNeonConnection);
@@ -193,6 +217,7 @@ app.get('/api/database/test-prisma', databaseController.testPrismaConnection);
 
 // Auth routes
 app.post('/api/auth/login', authController.login);
+app.post('/api/auth/logout', authController.logout);
 app.post('/api/auth/set-password', authController.setPassword);
 
 // User routes
@@ -209,6 +234,10 @@ app.get('/api/box-types/code/:code', boxTypesController.getBoxTypeByCode);
 app.post('/api/box-types', boxTypesController.createBoxType);
 app.put('/api/box-types/:id', boxTypesController.updateBoxType);
 app.delete('/api/box-types/:id', boxTypesController.deleteBoxType);
+
+// Products routes
+app.get('/api/products/onhand', productsController.getOnhandProducts);
+app.get('/api/products/preorder', productsController.getPreorderProducts);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

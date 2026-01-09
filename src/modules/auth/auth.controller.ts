@@ -132,4 +132,27 @@ export class AuthController {
       });
     }
   };
+
+  /**
+   * POST /auth/logout
+   * Logout user (clears session on frontend)
+   * Note: With JWT, logout is primarily handled on frontend by removing token
+   * This endpoint just confirms logout was successful
+   */
+  logout = async (req: Request, res: Response) => {
+    try {
+      // Logout is primarily handled on frontend by clearing token
+      // This endpoint just confirms the logout request
+      res.status(200).json({
+        success: true,
+        message: 'Logged out successfully',
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: 'Failed to process logout request',
+      });
+    }
+  };
 }
