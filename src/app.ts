@@ -5,6 +5,8 @@ import { DatabaseController } from './modules/database/database.controller';
 import { BoxTypesController } from './modules/box-types/box-types.controller';
 import { AuthController } from './modules/auth/auth.controller';
 import { ProductsController } from './modules/products/products.controller';
+import { VariationsController } from './modules/products/variations.controller';
+import { PriceComparisonsController } from './modules/products/price-comparisons.controller';
 
 /**
  * Express Application
@@ -279,6 +281,8 @@ const databaseController = new DatabaseController();
 const boxTypesController = new BoxTypesController();
 const authController = new AuthController();
 const productsController = new ProductsController();
+const variationsController = new VariationsController();
+const priceComparisonsController = new PriceComparisonsController();
 
 // Database connection test routes
 app.get('/api/database/test', databaseController.testNeonConnection);
@@ -312,6 +316,22 @@ app.get('/api/products/:id', productsController.getProductById);
 app.post('/api/products', productsController.createProduct);
 app.put('/api/products/:id', productsController.updateProduct);
 app.delete('/api/products/:id', productsController.deleteProduct);
+
+// Product Variations routes
+app.get('/api/products/:productId/variations', variationsController.getVariations);
+app.get('/api/products/:productId/variations/:variationId', variationsController.getVariationById);
+app.post('/api/products/:productId/variations', variationsController.createVariation);
+app.put('/api/products/:productId/variations/:variationId', variationsController.updateVariation);
+app.delete('/api/products/:productId/variations/:variationId', variationsController.deleteVariation);
+app.post('/api/products/:productId/variations/batch', variationsController.batchUpdateVariations);
+
+// Price Comparisons routes
+app.get('/api/products/:productId/price-comparisons', priceComparisonsController.getPriceComparisons);
+app.get('/api/products/:productId/price-comparisons/:comparisonId', priceComparisonsController.getPriceComparisonById);
+app.post('/api/products/:productId/price-comparisons', priceComparisonsController.createPriceComparison);
+app.put('/api/products/:productId/price-comparisons/:comparisonId', priceComparisonsController.updatePriceComparison);
+app.delete('/api/products/:productId/price-comparisons/:comparisonId', priceComparisonsController.deletePriceComparison);
+app.post('/api/products/:productId/price-comparisons/batch', priceComparisonsController.batchUpdatePriceComparisons);
 
 // 404 handler
 app.use((req: Request, res: Response) => {

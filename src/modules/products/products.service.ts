@@ -119,6 +119,17 @@ export class ProductsService {
           product_variations: true,
         },
       },
+      price_comparisons: {
+        where: { is_active: true },
+        select: {
+          id: true,
+          website: true,
+          url: true,
+          price: true,
+          currency: true,
+          last_checked: true,
+        },
+      },
     };
 
     // Execute queries in parallel for better performance
@@ -283,6 +294,17 @@ export class ProductsService {
           product_variations: true,
         },
       },
+      price_comparisons: {
+        where: { is_active: true },
+        select: {
+          id: true,
+          website: true,
+          url: true,
+          price: true,
+          currency: true,
+          last_checked: true,
+        },
+      },
     };
 
     // Execute queries in parallel for better performance
@@ -415,6 +437,28 @@ export class ProductsService {
       weight: product.weight ? Number(product.weight) : null,
       dimensions,
       stores: stores.length > 0 ? stores : undefined, // Only include if has stores
+      variations: product.product_variations && product.product_variations.length > 0 
+        ? product.product_variations.map((v: any) => ({
+            id: v.id,
+            name: v.name,
+            type: v.type,
+            value: v.value,
+            price_modifier: v.price_modifier ? Number(v.price_modifier) : 0,
+            stock: v.stock || 0,
+            sku: v.sku,
+            image_url: v.image_url,
+          }))
+        : undefined,
+      price_comparisons: product.price_comparisons && product.price_comparisons.length > 0
+        ? product.price_comparisons.map((pc: any) => ({
+            id: pc.id,
+            website: pc.website,
+            url: pc.url,
+            price: Number(pc.price),
+            currency: pc.currency,
+            last_checked: pc.last_checked ? new Date(pc.last_checked).toISOString() : null,
+          }))
+        : undefined,
       created_at: product.created_at ? new Date(product.created_at).toISOString() : null,
       updated_at: product.updated_at ? new Date(product.updated_at).toISOString() : null,
     };
@@ -552,6 +596,9 @@ export class ProductsService {
           },
         },
         product_variations: true,
+        price_comparisons: {
+          where: { is_active: true },
+        },
       },
     });
 
@@ -569,19 +616,64 @@ export class ProductsService {
     // Auto-set is_onhand_available based on stock
     const isOnhandAvailable = data.is_onhand_available ?? (data.stock > 0);
 
-    const product = await prisma.products.create({
-      data: {
-        ...data,
-        is_onhand_available: isOnhandAvailable,
-      },
-      include: {
-        product_stores: {
-          include: {
-            stores: true,
+    // Extract variations and price_comparisons from data
+    const { variations, price_comparisons, ...productData } = data;
+
+    const product = await prisma.$transaction(async (tx: any) => {
+      // Create product
+      const createdProduct = await tx.products.create({
+        data: {
+          ...productData,
+          is_onhand_available: isOnhandAvailable,
+        },
+      });
+
+      // Create variations if provided
+      if (variations && variations.length > 0) {
+        await tx.product_variations.createMany({
+          data: variations.map(v => ({
+            product_id: createdProduct.id,
+            name: v.name,
+            type: v.type,
+            value: v.value,
+            price_modifier: v.price_modifier,
+            stock: v.stock,
+            sku: v.sku,
+            image_url: v.image_url,
+          })),
+        });
+      }
+
+      // Create price comparisons if provided
+      if (price_comparisons && price_comparisons.length > 0) {
+        await tx.price_comparisons.createMany({
+          data: price_comparisons.map(pc => ({
+            product_id: createdProduct.id,
+            website: pc.website,
+            url: pc.url,
+            price: pc.price,
+            currency: pc.currency,
+            last_checked: new Date(),
+            is_active: true,
+          })),
+        });
+      }
+
+      // Return product with relations
+      return await tx.products.findUnique({
+        where: { id: createdProduct.id },
+        include: {
+          product_stores: {
+            include: {
+              stores: true,
+            },
+          },
+          product_variations: true,
+          price_comparisons: {
+            where: { is_active: true },
           },
         },
-        product_variations: true,
-      },
+      });
     });
 
     return this.formatProduct(product as any, true);

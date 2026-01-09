@@ -86,6 +86,21 @@ export const createProductDto = z.object({
   tags: z.array(z.string()).default([]),
   full_description: z.string().optional(),
   specifications: z.record(z.any()).optional(),
+  variations: z.array(z.object({
+    name: z.string().min(1).max(255),
+    type: z.string().max(50).optional(),
+    value: z.string().min(1).max(255),
+    price_modifier: z.number().default(0),
+    stock: z.number().int().min(0).default(0),
+    sku: z.string().max(100).optional(),
+    image_url: z.string().url().optional(),
+  })).optional(),
+  price_comparisons: z.array(z.object({
+    website: z.string().min(1).max(255),
+    url: z.string().url().max(500),
+    price: z.number().positive(),
+    currency: z.string().length(3).default('KRW'),
+  })).optional(),
 });
 
 export type CreateProductDto = z.infer<typeof createProductDto>;
