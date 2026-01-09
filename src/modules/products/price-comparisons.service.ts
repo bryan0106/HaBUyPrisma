@@ -119,7 +119,7 @@ export class PriceComparisonsService {
       throw new Error('PRODUCT_NOT_FOUND');
     }
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const results = [];
 
       for (const comparison of data.comparisons) {
