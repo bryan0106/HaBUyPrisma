@@ -100,15 +100,6 @@ export class ProductsService {
       dimensions: true,
       created_at: true,
       updated_at: true,
-      // New database fields for frontend
-      item_type: true,
-      artist: true,
-      price_conversion_rate: true,
-      original_price_markup: true,
-      new_arrival_days: true,
-      is_new_arrival: true,
-      max_price_filter: true,
-      shipping_estimate: true,
       // Include related data with optimized selects
       product_stores: {
         select: {
@@ -284,17 +275,6 @@ export class ProductsService {
       release_date: true,
       created_at: true,
       updated_at: true,
-      // New database fields for frontend
-      item_type: true,
-      artist: true,
-      price_conversion_rate: true,
-      original_price_markup: true,
-      new_arrival_days: true,
-      is_new_arrival: true,
-      max_price_filter: true,
-      shipping_estimate: true,
-      shipping_time_days: true,
-      deposit_percentage: true,
       // Include related data with optimized selects
       product_stores: {
         select: {
@@ -481,15 +461,6 @@ export class ProductsService {
         : undefined,
       created_at: product.created_at ? new Date(product.created_at).toISOString() : null,
       updated_at: product.updated_at ? new Date(product.updated_at).toISOString() : null,
-      // New database fields for frontend
-      item_type: product.item_type || null,
-      artist: product.artist || null,
-      currency_rate: product.price_conversion_rate ? Number(product.price_conversion_rate) : 0.042, // Default to 0.042 if not set
-      original_price_markup: product.original_price_markup ? Number(product.original_price_markup) : 1.3, // Default to 1.3 if not set
-      new_arrival_days: product.new_arrival_days !== null && product.new_arrival_days !== undefined ? Number(product.new_arrival_days) : 14, // Default to 14 if not set
-      is_new_arrival: product.is_new_arrival !== null && product.is_new_arrival !== undefined ? Boolean(product.is_new_arrival) : false,
-      max_price_filter: product.max_price_filter ? Number(product.max_price_filter) : 100000, // Default to 100000 if not set
-      shipping_estimate: product.shipping_estimate || '7-14 days (Sea) / 3-5 days (Air)', // Default text if not set
     };
 
     // Add preorder-specific fields (for preorder products or products with preorder available)
@@ -502,13 +473,6 @@ export class ProductsService {
       formatted.release_date = product.release_date 
         ? new Date(product.release_date).toISOString()
         : null;
-      // Preorder-specific fields
-      formatted.shipping_time_days = product.shipping_time_days !== null && product.shipping_time_days !== undefined 
-        ? Number(product.shipping_time_days) 
-        : 7; // Default to 7 if not set
-      formatted.deposit_percentage = product.deposit_percentage !== null && product.deposit_percentage !== undefined 
-        ? Number(product.deposit_percentage) 
-        : 50; // Default to 50 if not set
     }
 
     return formatted;
@@ -635,7 +599,7 @@ export class ProductsService {
         price_comparisons: {
           where: { is_active: true },
         },
-      } as any, // Type assertion for Render build compatibility
+      },
     });
 
     if (!product) {
@@ -708,7 +672,7 @@ export class ProductsService {
           price_comparisons: {
             where: { is_active: true },
           },
-        } as any, // Type assertion for Render build compatibility
+        },
       });
     });
 
