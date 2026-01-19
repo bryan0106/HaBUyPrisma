@@ -86,6 +86,16 @@ export const createProductDto = z.object({
   tags: z.array(z.string()).default([]),
   full_description: z.string().optional(),
   specifications: z.record(z.any()).optional(),
+  // New database fields for frontend
+  item_type: z.enum(['Album', 'Ticket', 'Bag', 'Accessories', 'Poster', 'Clothing', 'Item']).optional(),
+  artist: z.string().max(100).optional(),
+  original_price_markup: z.number().positive().default(1.3),
+  new_arrival_days: z.number().int().min(0).default(14),
+  is_new_arrival: z.boolean().default(false),
+  max_price_filter: z.number().positive().default(100000),
+  shipping_estimate: z.string().max(255).optional(),
+  shipping_time_days: z.number().int().min(0).optional(),
+  deposit_percentage: z.number().int().min(0).max(100).optional(),
   variations: z.array(z.object({
     name: z.string().min(1).max(255),
     type: z.string().max(50).optional(),
@@ -139,6 +149,16 @@ export const updateProductDto = z.object({
   tags: z.array(z.string()).optional(),
   full_description: z.string().optional().nullable(),
   specifications: z.record(z.any()).optional().nullable(),
+  // New database fields for frontend
+  item_type: z.enum(['Album', 'Ticket', 'Bag', 'Accessories', 'Poster', 'Clothing', 'Item']).optional().nullable(),
+  artist: z.string().max(100).optional().nullable(),
+  original_price_markup: z.number().positive().optional(),
+  new_arrival_days: z.number().int().min(0).optional(),
+  is_new_arrival: z.boolean().optional(),
+  max_price_filter: z.number().positive().optional(),
+  shipping_estimate: z.string().max(255).optional().nullable(),
+  shipping_time_days: z.number().int().min(0).optional(),
+  deposit_percentage: z.number().int().min(0).max(100).optional(),
 });
 
 export type UpdateProductDto = z.infer<typeof updateProductDto>;
